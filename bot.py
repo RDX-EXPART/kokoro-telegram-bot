@@ -2,19 +2,20 @@ import requests
 
 from telegram import Update
 from telegram.ext import (
-Application,
-CommandHandler,
-MessageHandler,
-ContextTypes,
-filters
+    Application,
+    CommandHandler,
+    MessageHandler,
+    ContextTypes,
+    filters
 )
 
 from config import *
 
 CURRENT_VOICE = VOICE
 
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-msg = f"""
+    msg = f"""
 🎙 Welcome to RDX AI Voice Bot
 
 ✨ Convert any text into realistic AI speech.
@@ -31,12 +32,11 @@ msg = f"""
 💬 Just send any text and receive AI generated voice.
 """
 
-```
-await update.message.reply_text(msg)
-```
+    await update.message.reply_text(msg)
+
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-msg = """
+    msg = """
 📖 RDX AI Voice Bot Help
 
 🔹 Send any text to generate voice.
@@ -68,101 +68,104 @@ Hindi Style:
 • hm_psi
 """
 
-```
-await update.message.reply_text(msg)
-```
+    await update.message.reply_text(msg)
+
 
 async def voices(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        r = requests.get(
+            f"{KOKORO_API}/v1/audio/voices",
+            timeout=30
+        )
 
-```
-try:
-    r = requests.get(
-        f"{KOKORO_API}/v1/audio/voices",
-        timeout=30
-    )
+        data = r.json()
 
-    data = r.json()
+        voice_list = "\n".join(
+            [voice["id"] for voice in data["voices"]]
+        )
 
-    voice_list = "\n".join(
-        [v["id"] for v in data["voices"]]
-    )
+        await update.message.reply_text(
+            f"🎤 Available Voices\n\n{voice_list}"
+        )
 
-    await update.message.reply_text(
-        f"🎤 Available Voices\n\n{voice_list}"
-    )
+    except Exception as e:
+        await update.message.reply_text(
+            f"❌ Error:\n{e}"
+        )
 
-except Exception as e:
-    await update.message.reply_text(
-        f"❌ Error:\n{e}"
-    )
-```
 
 async def change_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global CURRENT_VOICE
 
-```
-global CURRENT_VOICE
+    if not context.args:
+        await update.message.reply_text(
+            "Usage:\n/voice af_bella"
+        )
+        return
 
-if not context.args:
+    CURRENT_VOICE = context.args[0]
+
     await update.message.reply_text(
-        "Usage:\n/voice af_bella"
+        f"✅ Voice Changed Successfully\n\n🎤 {CURRENT_VOICE}"
     )
-    return
 
-CURRENT_VOICE = context.args[0]
-
-await update.message.reply_text(
-    f"✅ Voice Changed Successfully\n\n🎤 {CURRENT_VOICE}"
-)
-```
 
 async def tts(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
 
-```
-text = update.message.text
+    try:
+        payload = {
+            "model": "kokoro",
+            "input": text,
+            "voice": CURRENT_VOICE
+        }
 
-try:
+        r = requests.post(
+            f"{KOKORO_API}/v1/audio/speech",
+            json=payload,
+            timeout=120
+        )
 
-    payload = {
-        "model": "kokoro",
-        "input": text,
-        "voice": CURRENT_VOICE
-    }
+        if r.status_code != 200:
+            await update.message.reply_text(
+                f"❌ API Error: {r.status_code}"
+            )
+            return
 
-    r = requests.post(
-        f"{KOKORO_API}/v1/audio/speech",
-        json=payload,
-        timeout=120
+        with open("voice.wav", "wb") as f:
+            f.write(r.content)
+
+        with open("voice.wav", "rb") as audio:
+            await update.message.reply_voice(
+                voice=audio,
+                caption=f"🎙 Voice: {CURRENT_VOICE}"
+            )
+
+    except Exception as e:
+        await update.message.reply_text(
+            f"❌ Error:\n{e}"
+        )
+
+
+def main():
+    print("✅ RDX AI Voice Bot Started")
+
+    app = Application.builder().token(BOT_TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help_cmd))
+    app.add_handler(CommandHandler("voices", voices))
+    app.add_handler(CommandHandler("voice", change_voice))
+
+    app.add_handler(
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND,
+            tts
+        )
     )
 
-    with open("voice.wav", "wb") as f:
-        f.write(r.content)
+    app.run_polling()
 
-    await update.message.reply_voice(
-        voice=open("voice.wav", "rb"),
-        caption=f"🎙 Voice: {CURRENT_VOICE}"
-    )
 
-except Exception as e:
-
-    await update.message.reply_text(
-        f"❌ Error:\n{e}"
-    )
-```
-
-app = Application.builder().token(BOT_TOKEN).build()
-
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("help", help_cmd))
-app.add_handler(CommandHandler("voices", voices))
-app.add_handler(CommandHandler("voice", change_voice))
-
-app.add_handler(
-MessageHandler(
-filters.TEXT & ~filters.COMMAND,
-tts
-)
-)
-
-print("✅ RDX AI Voice Bot Started")
-
-app.run_polling()
+if __name__ == "__main__":
+    main()
