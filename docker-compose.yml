@@ -1,1 +1,18 @@
+version: "3.9"
 
+services:
+  kokoro:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu
+    container_name: kokoro
+    restart: unless-stopped
+    ports:
+      - "8880:8880"
+
+  bot:
+    build: .
+    container_name: telegram-tts-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - kokoro
