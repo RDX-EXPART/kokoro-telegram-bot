@@ -32,9 +32,9 @@ from telethon.tl.types import (Document, InputFileLocation, InputDocumentFileLoc
                                InputFileBig, InputFile)
 
 # ==================== CONFIGURATION ====================
-API_ID = 12345678  # ENTER YOUR API_ID (Integer)
-API_HASH = "ENTER_YOUR_API_HASH"
-BOT_TOKEN = "ENTER_YOUR_BOT_TOKEN"
+API_ID = 26107399  # ENTER YOUR API_ID (Integer)
+API_HASH = "e10525d8ad0189f8bf7a82a32f538d12"
+BOT_TOKEN = "8502096787:AAE-QTuXIZqjVvbD9dVlBx_4lBeQMrABcoM"
 WATERMARK_VIDEO_PATH = "ENTER_YOUR_WATERMARK_VIDEO_PATH"  # e.g., "/absolute/path/to/promo.mkv"
 DOWNLOADS_DIR = "ENTER_YOUR_DOWNLOADS_DIRECTORY_PATH"  # e.g., "/absolute/path/to/downloads"
 # =======================================================
